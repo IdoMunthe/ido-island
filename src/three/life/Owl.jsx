@@ -7,13 +7,18 @@
 // way round. The flight maths is in flight.js (shared with
 // scripts/flightplot.mjs, which draws it). Once per nightfall.
 // Perched, it blinks now and then, turns its head sharply and holds, and
-// settles. On the "off" tier it just appears and disappears on the perch.
+// settles, and now and then hoots (ambience.js plays the clip, panned to
+// where the post is on screen; the head dips with it). On the "off" tier it
+// just appears and disappears on the perch.
 import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { PALETTE, LANDMARKS, OWL } from "../island.config.js";
 import { useDay } from "../sky/DayNight.jsx";
 import { makeFlight, wingPose, bodyResponse, foldAt } from "./flight.js";
+import { setOwlPresence, owlHoot } from "../../audio/ambience.js";
+
+const tmpV = new THREE.Vector3();
 
 const BODY = "#8c6543"; // PALETTE.woodDark: a barn-owl brown
 const DARK = "#6f4f34";
@@ -203,6 +208,11 @@ export function Owl({ tier }) {
     // ---- the head: held level against the body's pitch and roll, and
     // locked onto the perch on the way in; perched, its own life
     const perched = s.phase === "perched";
+    // the hoots: only while it is on the post, panned to where the post is on screen
+    tmpV.copy(perch).project(state.camera);
+    setOwlPresence(perched, THREE.MathUtils.clamp(tmpV.x, -1, 1) * 0.8);
+    const hs = (performance.now() - owlHoot().lastAt) / 1000;
+    const hootK = perched && owlHoot().lastAt > 0 && hs >= 0 && hs < 0.9 ? Math.sin((hs / 0.9) * Math.PI) : 0;
     s.nextBlink -= dt;
     if (s.nextBlink <= 0) {
       s.blink = 0.22;
@@ -229,7 +239,9 @@ export function Owl({ tier }) {
     if (head.current) {
       const stab = perched ? 0 : 0.9;
       head.current.rotation.y = s.turn;
-      head.current.rotation.x = -(s.pitch + bodyPitch) * stab + (perched ? Math.sin(t * 0.21) * 0.03 : 0);
+      // a hoot: the head dips and the body puffs a little with it
+      head.current.rotation.x = -(s.pitch + bodyPitch) * stab + (perched ? Math.sin(t * 0.21) * 0.03 : 0) - 0.22 * hootK;
+      if (body.current && hootK) body.current.scale.y *= 1 + 0.07 * hootK;
       head.current.rotation.z = -s.roll * stab + (perched ? Math.sin(t * 0.3) * 0.04 + s.turn * 0.08 : 0);
     }
   });

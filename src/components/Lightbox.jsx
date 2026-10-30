@@ -27,6 +27,11 @@ const SWIPE = 48; // px of horizontal travel that counts as a swipe
 const TURN = 0.85; // seconds a page takes to turn
 const EASE = [0.5, 0.05, 0.2, 1];
 const SPREAD_QUERY = "(min-width: 768px)";
+// The description types itself in once a page has landed (ms): a lead-in
+// after the landing, a base per character with a little jitter, and a
+// longer beat after a full stop or a comma. Any click, tap or key finishes
+// it at once; reduced motion shows the whole text straight away.
+const TYPE = { lead: 420, base: 20, jitter: 14, stop: 240, pause: 110 };
 
 // Two facing pages from 768px up, one page below.
 function useSpread() {
@@ -61,12 +66,31 @@ function Mount({ item, src, onError, tilt = -1.4 }) {
   );
 }
 
-// The writing: title by hand, description in the body face, folio.
-function Writing({ item, index, n, live = false }) {
+// The writing: title by hand, the description in the body face, folio.
+// `shown` is how many characters of the description are typed so far
+// (null: all of it, static). The full text is laid out invisibly
+// underneath so the page never grows while it types, and is in the DOM
+// in full, visually hidden, for assistive tech; the typed copy is
+// aria-hidden. The title is handwriting and is never typed.
+function Writing({ item, index, n, live = false, shown = null }) {
+  const full = item.description || "";
+  const typing = shown != null && shown < full.length;
+  const text = shown == null ? full : full.slice(0, Math.max(0, shown));
   return (
     <>
       <p className="hand album-title">{item.caption}</p>
-      {item.description ? <p className="album-desc">{item.description}</p> : null}
+      {full ? (
+        <p className="album-desc">
+          <span className="sr-only">{full}</span>
+          <span aria-hidden="true" className="album-desc-layer">
+            <span className="album-desc-ghost">{full}</span>
+            <span className="album-desc-typed">
+              {text}
+              {typing ? <span className="album-caret" /> : null}
+            </span>
+          </span>
+        </p>
+      ) : null}
       <p className="album-folio tabular" aria-live={live ? "polite" : undefined}>
         {index + 1} / {n}
       </p>
@@ -82,22 +106,22 @@ function PhotoPage({ item, src, onError, side = "left" }) {
   );
 }
 
-function TextPage({ item, index, n, side = "right", live = false }) {
+function TextPage({ item, index, n, side = "right", live = false, shown = null }) {
   return (
     <div className={`album-page album-page-${side} album-page-text`}>
-      <Writing item={item} index={index} n={n} live={live} />
+      <Writing item={item} index={index} n={n} live={live} shown={shown} />
     </div>
   );
 }
 
-function SinglePage({ item, src, onError, index, n, live = false }) {
+function SinglePage({ item, src, onError, index, n, live = false, shown = null }) {
   return (
     <div className="album-page album-page-single">
       <div className="album-page-photo">
         <Mount item={item} src={src} onError={onError} tilt={-1.1} />
       </div>
       <div className="album-page-text">
-        <Writing item={item} index={index} n={n} live={live} />
+        <Writing item={item} index={index} n={n} live={live} shown={shown} />
       </div>
     </div>
   );
@@ -154,6 +178,50 @@ export function Lightbox({ items, index, onIndex, onClose }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, n]);
 
+  // The typewriter. It writes the description of whichever page is current
+  // or about to land: nothing during a turn, then — once the leaf has
+  // landed, or the album has opened — character by character. Every turn
+  // starts it over, so quick turning never queues a backlog.
+  const [typed, setTyped] = useState(0);
+  const typeTimer = useRef(null);
+  const typeTarget = turning ? turning.to : index;
+  const desc = items[typeTarget]?.description || "";
+  const shownFor = (i) => (i === typeTarget ? (reduce ? Infinity : typed) : null);
+  useEffect(() => {
+    window.clearTimeout(typeTimer.current);
+    typeTimer.current = null;
+    if (reduce) {
+      setTyped(Infinity);
+      return;
+    }
+    setTyped(0);
+    if (turning || !desc) return; // the landing page waits for the leaf
+    let i = 0;
+    const tick = () => {
+      i++;
+      setTyped(i);
+      if (i >= desc.length) {
+        typeTimer.current = null;
+        return;
+      }
+      const ch = desc[i - 1];
+      const wait = TYPE.base + Math.random() * TYPE.jitter + (/[.!?…]/.test(ch) ? TYPE.stop : /[,;:—–]/.test(ch) ? TYPE.pause : 0);
+      typeTimer.current = window.setTimeout(tick, wait);
+    };
+    typeTimer.current = window.setTimeout(tick, TYPE.lead);
+    return () => {
+      window.clearTimeout(typeTimer.current);
+      typeTimer.current = null;
+    };
+  }, [index, turning, reduce, desc]);
+  // any click, tap or key while it types finishes the text at once
+  const skipTyping = () => {
+    if (typeTimer.current == null) return;
+    window.clearTimeout(typeTimer.current);
+    typeTimer.current = null;
+    setTyped(Infinity);
+  };
+
   const go = (dir) => {
     if (n < 2 || turning) return;
     const to = (index + dir + n) % n;
@@ -172,6 +240,7 @@ export function Lightbox({ items, index, onIndex, onClose }) {
   };
 
   const onKey = (e) => {
+    skipTyping();
     if (e.key === "Escape") {
       e.stopPropagation();
       onClose();
@@ -192,6 +261,7 @@ export function Lightbox({ items, index, onIndex, onClose }) {
     }
   };
   const onTouchStart = (e) => {
+    skipTyping();
     touch.current = e.touches[0].clientX;
   };
   const onTouchEnd = (e) => {
@@ -226,7 +296,10 @@ export function Lightbox({ items, index, onIndex, onClose }) {
         aria-label={`${ui.label}: ${cur.caption || ""}`.trim()}
         tabIndex={-1}
         onKeyDown={onKey}
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          skipTyping();
+        }}
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         className="relative flex max-h-full w-full max-w-[1080px] flex-col items-stretch outline-none"
@@ -239,7 +312,7 @@ export function Lightbox({ items, index, onIndex, onClose }) {
                   <PhotoPage item={items[leftIdx]} src={srcFor(leftIdx)} onError={fail(leftIdx)} side="left" />
                 </motion.div>
                 <motion.div key={reduce ? `r${rightIdx}` : "r"} className="album-half" {...fade}>
-                  <TextPage item={items[rightIdx]} index={rightIdx} n={n} side="right" live />
+                  <TextPage item={items[rightIdx]} index={rightIdx} n={n} side="right" live shown={shownFor(rightIdx)} />
                 </motion.div>
                 <div className="album-spine" aria-hidden="true" />
 
@@ -259,7 +332,7 @@ export function Lightbox({ items, index, onIndex, onClose }) {
                         {fwd ? <TextPage item={items[turning.from]} index={turning.from} n={n} side="right" /> : <PhotoPage item={items[turning.from]} src={srcFor(turning.from)} onError={fail(turning.from)} side="left" />}
                       </div>
                       <div className="album-face is-back">
-                        {fwd ? <PhotoPage item={items[turning.to]} src={srcFor(turning.to)} onError={fail(turning.to)} side="left" /> : <TextPage item={items[turning.to]} index={turning.to} n={n} side="right" />}
+                        {fwd ? <PhotoPage item={items[turning.to]} src={srcFor(turning.to)} onError={fail(turning.to)} side="left" /> : <TextPage item={items[turning.to]} index={turning.to} n={n} side="right" shown={shownFor(turning.to)} />}
                       </div>
                       {/* the page darkens as it stands on edge */}
                       <motion.div className="album-curl" initial={{ opacity: 0 }} animate={{ opacity: [0, 0.5, 0] }} transition={shadeTransition} />
@@ -270,7 +343,7 @@ export function Lightbox({ items, index, onIndex, onClose }) {
             ) : (
               <div className="album-single">
                 <motion.div key={reduce ? `s${singleIdx}` : "s"} {...fade}>
-                  <SinglePage item={items[singleIdx]} src={srcFor(singleIdx)} onError={fail(singleIdx)} index={singleIdx} n={n} live />
+                  <SinglePage item={items[singleIdx]} src={srcFor(singleIdx)} onError={fail(singleIdx)} index={singleIdx} n={n} live shown={shownFor(singleIdx)} />
                 </motion.div>
                 {turning ? (
                   <>
@@ -284,7 +357,7 @@ export function Lightbox({ items, index, onIndex, onClose }) {
                       aria-hidden="true"
                     >
                       <div className="album-face">
-                        <SinglePage item={items[fwd ? turning.from : turning.to]} src={srcFor(fwd ? turning.from : turning.to)} onError={fail(fwd ? turning.from : turning.to)} index={fwd ? turning.from : turning.to} n={n} />
+                        <SinglePage item={items[fwd ? turning.from : turning.to]} src={srcFor(fwd ? turning.from : turning.to)} onError={fail(fwd ? turning.from : turning.to)} index={fwd ? turning.from : turning.to} n={n} shown={shownFor(fwd ? turning.from : turning.to)} />
                       </div>
                       <div className="album-face is-back">
                         <BlankPage side="single" />

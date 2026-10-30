@@ -4,6 +4,9 @@
 // sound is turned on. Web Audio (decoded buffers looped on the graph)
 // rather than <audio loop>, so the loops have no gap and the two layers
 // crossfade on gain nodes. Levels and files: AUDIO in island.config.js.
+// The owl hoots now and then while it is on its post: one-shots from
+// decoded buffers, quiet, irregular, panned to where the post is on screen
+// (the scene reports its presence and position every frame).
 // Each place also has its own synthesised track (music.js), which plays
 // on the same graph while that place is open; the sea ducks under it.
 import { AUDIO } from "../three/island.config.js";
@@ -18,12 +21,19 @@ const state = {
   night: 0, // 0 by day → 1 at night, fed by the scene each frame
   hidden: false,
   paused: false, // document mode etc.
+  // the owl: on its post or not, where it is on screen (-1 … 1), when the
+  // next hoot is due (context seconds), the last clip, and the last hoot's
+  // start (performance.now ms) and length for the owl's own gesture
+  owl: { present: false, pan: 0, next: 0, last: -1, lastAt: 0, lastDur: 0, src: null },
 };
+const rand = ([a, b]) => a + Math.random() * (b - a);
 
 let ctx = null;
 let master = null;
 let seaGain = null;
 let nightGain = null;
+let owlGain = null;
+let owlPan = null;
 let sources = [];
 let buffers = null;
 let loadingPromise = null;
@@ -68,8 +78,8 @@ async function load() {
         if (!res.ok) throw new Error(`${file}: ${res.status}`);
         return ctx.decodeAudioData(await res.arrayBuffer());
       };
-      const [sea, night] = await Promise.all([fetchBuffer(AUDIO.files.sea), fetchBuffer(AUDIO.files.night)]);
-      buffers = { sea, night };
+      const [sea, night, ...owl] = await Promise.all([fetchBuffer(AUDIO.files.sea), fetchBuffer(AUDIO.files.night), ...(AUDIO.files.owl || []).map(fetchBuffer)]);
+      buffers = { sea, night, owl };
       return buffers;
     })().catch((e) => {
       loadingPromise = null;
@@ -114,6 +124,13 @@ function build() {
     src.start(0, src.loopStart);
     sources.push(src);
   }
+  // the owl: its own gain under the master, through a panner when there is one
+  owlGain = ctx.createGain();
+  owlGain.gain.value = AUDIO.owl?.level ?? 0.3;
+  owlGain.connect(master);
+  owlPan = typeof ctx.createStereoPanner === "function" ? ctx.createStereoPanner() : null;
+  if (owlPan) owlPan.connect(owlGain);
+  state.owl.next = ctx.currentTime + rand(AUDIO.owl?.first || [4, 12]);
   startMusic(ctx, master);
 }
 
@@ -128,9 +145,60 @@ function teardown() {
     s.disconnect();
   }
   sources = [];
+  stopHoot();
+  if (owlPan) owlPan.disconnect();
+  if (owlGain) owlGain.disconnect();
   if (master) master.disconnect();
-  master = seaGain = nightGain = null;
+  master = seaGain = nightGain = owlGain = owlPan = null;
 }
+
+// ---- the owl ---------------------------------------------------------------
+function stopHoot() {
+  const o = state.owl;
+  if (!o.src) return;
+  try {
+    o.src.stop();
+  } catch {
+    /* already stopped */
+  }
+  o.src = null;
+}
+function hoot() {
+  const o = state.owl;
+  const clips = buffers?.owl || [];
+  if (!clips.length || !ctx || !owlGain) return;
+  // mostly the single call; a sequence now and then; never the same twice running
+  let i = clips.length > 1 && Math.random() >= (AUDIO.owl?.shortOdds ?? 0.65) ? 1 + Math.floor(Math.random() * (clips.length - 1)) : 0;
+  if (clips.length > 1 && i === o.last) i = (i + 1) % clips.length;
+  const src = ctx.createBufferSource();
+  src.buffer = clips[i];
+  src.connect(owlPan || owlGain);
+  src.onended = () => {
+    if (o.src === src) o.src = null;
+  };
+  src.start();
+  o.src = src;
+  o.last = i;
+  o.lastAt = performance.now();
+  o.lastDur = clips[i].duration;
+  o.next = ctx.currentTime + clips[i].duration + rand(AUDIO.owl?.gap || [20, 50]);
+}
+// The scene calls this every frame: whether the owl is on its post, and
+// where the post is across the screen (-1 left … 1 right) for the panner.
+// Hoots only play while it is there; when it leaves, a hoot in progress
+// stops with it, and the next landing waits `first` seconds again.
+export function setOwlPresence(present, pan = 0) {
+  const o = state.owl;
+  if (present && !o.present && ctx) o.next = ctx.currentTime + rand(AUDIO.owl?.first || [4, 12]);
+  if (!present && o.present) stopHoot();
+  o.present = present;
+  o.pan = pan;
+  if (!present || !owlGain || !ctx || state.status !== "on" || state.hidden || state.paused || ctx.state !== "running") return;
+  if (owlPan && Math.abs(owlPan.pan.value - pan) > 0.02) owlPan.pan.setTargetAtTime(pan, ctx.currentTime, 0.25);
+  if (!o.src && ctx.currentTime >= o.next) hoot();
+}
+// For the owl's own gesture: when the last hoot started and how long it is.
+export const owlHoot = () => state.owl;
 
 // Turn sound on. Must be called from a user gesture the first time (the
 // browser will otherwise keep the context suspended, which we report as

@@ -7,6 +7,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, ContactShadows } from "@react-three/drei";
 import * as THREE from "three";
 import { IslandContext } from "./islandContext.js";
+import { content } from "../content.js";
 import { PALETTE, RENDER, LIGHTS, CAMERA, LANDMARKS, TIERS, LIFE } from "./island.config.js";
 import { waitForFonts } from "./textures.js";
 import { loading, reportStage, expectPaint } from "./loading.js";
@@ -70,11 +71,13 @@ function useFontsReady(onReady) {
   useEffect(() => {
     let alive = true;
     reportStage("fonts");
-    waitForFonts().then(() => {
+    // every character the ema paint, so the CJK face's pieces are fetched first
+    const glyphs = (content.values?.items || []).map((v) => v.glyph || "").join("");
+    waitForFonts(1800, glyphs).then(() => {
       if (!alive) return;
-      // seven painted textures: house sign, crates, gate sign, washing
-      // line photos, guitar wood, racket strings, the ema
-      expectPaint(7);
+      // six painted textures: crates, gate sign, washing line photos,
+      // guitar wood, racket strings, the ema
+      expectPaint(6);
       reportStage("paint");
       setReady(true);
       onReady?.();

@@ -1,8 +1,7 @@
 // The little house: rounded plaster walls, a gable roof, a chimney, window
-// boxes, and the name on a sign by the door. In the evening the windows
-// glow and a warm light spills out. Card: header + about + numbers + the
+// boxes. In the evening the windows glow and a warm light spills out. Card: header + about + numbers + the
 // honest paragraph.
-import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useContext, useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { RoundedBox } from "@react-three/drei";
 import * as THREE from "three";
@@ -10,9 +9,7 @@ import { Landmark } from "./Landmark.jsx";
 import { PALETTE, LAMPS } from "../island.config.js";
 import { IslandContext } from "../islandContext.js";
 import { useDay } from "../sky/DayNight.jsx";
-import { content } from "../../content.js";
-import { paintSign, paintNoise, toTexture, remap } from "../textures.js";
-import { painted } from "../loading.js";
+import { paintNoise, toTexture } from "../textures.js";
 
 const W = 2.4;
 const D = 1.9;
@@ -21,16 +18,7 @@ const H = 1.45;
 export function House({ config }) {
   const { isTouch } = useContext(IslandContext);
   const day = useDay();
-  const [sign, setSign] = useState(null);
   const wallMap = useMemo(() => toTexture(paintNoise("#ffffff", 0.08, 256, 75), { repeat: 2 }), []);
-  useEffect(() => {
-    const t = toTexture(paintSign(content.header.name, content.header.tagline, isTouch ? 512 : 1024));
-    setSign(t);
-    painted();
-    return () => {
-      t.dispose();
-    };
-  }, [isTouch]);
   useEffect(() => () => wallMap.dispose(), [wallMap]);
 
   const roof = useMemo(() => {
@@ -118,20 +106,6 @@ export function House({ config }) {
       ))}
       {/* the warm light inside, spilling out of the front window in the evening */}
       {!isTouch ? <pointLight ref={light} position={[0.45, 0.9, D / 2 + 0.3]} color={LAMPS.color} intensity={0} distance={LAMPS.windows.distance} decay={2} /> : null}
-      {/* the sign by the door */}
-      <group position={[0.55, 0, D / 2 + 0.45]} rotation={[0, -0.15, 0]}>
-        <mesh position={[0, 0.5, 0]} castShadow>
-          <cylinderGeometry args={[0.03, 0.035, 1.0, 8]} />
-          <meshStandardMaterial color={PALETTE.woodDark} roughness={0.9} />
-        </mesh>
-        <RoundedBox args={[0.98, 0.5, 0.05]} radius={0.01} position={[0, 0.98, 0]} castShadow>
-          <meshStandardMaterial color={PALETTE.wood} roughness={0.9} />
-        </RoundedBox>
-        <mesh position={[0, 0.98, 0.027]}>
-          <planeGeometry args={[0.9, 0.42]} />
-          <meshStandardMaterial map={sign} color={sign ? "#ffffff" : PALETTE.paper} roughness={0.9} onUpdate={remap} />
-        </mesh>
-      </group>
     </Landmark>
   );
 }

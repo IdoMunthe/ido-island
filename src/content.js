@@ -67,13 +67,12 @@ export const content = {
   //  THE HOUSE  —  who you are  (name on the sign, a short introduction)
   // -------------------------------------------------------------------
   header: {
-    // Your name. Replace the brackets entirely. Long names wrap fine.
-    name: "[ YOUR NAME HERE ]",
-    // One line under the name. What you'd say if someone asked "so what
-    // are you like?" and you only had a breath. 6–14 words.
-    tagline: "Steady company, a careful cook, and close to my family.",
+    // Your name. Long names wrap fine.
+    name: "Ido",
+    // One line under the name. 6–14 words.
+    tagline: "Easy-going, up with the sun, and sure the journey is the destination.",
     // City, or "City, Country". Short.
-    location: "[ Your city ]",
+    location: "Jakarta, Indonesia",
     // Small coloured pill next to the location.
     //   `text`  — 2–5 words.
     //   `tone`  — "open" (green), "busy" (amber) or "closed" (grey).
@@ -90,11 +89,9 @@ export const content = {
   profile: {
     // Heading for the introduction. 1–4 words.
     title: "About me",
-    // 60–120 words. The paragraph people read first. Say what you do,
-    // what your days are like, and one or two things that are true of you
-    // and not of most people.
+    // 60–120 words. The paragraph people read first.
     text:
-      "I am a [ profession ], and on most days I am glad of it. Outside of work I cook properly, play the guitar and the piano, and take long walks that rarely end where I intended. I am the eldest of four, which explains a good deal about me: I am organised, I stay calm when things go wrong, and I have to remind myself that not everything requires a plan. People tell me I am quiet when they first meet me and much less so afterwards. I would rather have one real conversation than a whole evening of pleasant small talk, though I am trying to become better at the small talk as well.",
+      "I'm a software engineer in Jakarta, and my days have a simple rhythm: the gym in the morning, then work, then friends or home, and an early night so I can do it all again. Life just feels better when I rise and rest with the sun. On weekends I see friends, or go to an event where I know no one, on purpose, to step outside my comfort zone. I play the guitar and the piano, I'll say yes to almost any racket sport, and I'm always somewhere in the middle of a book. People who meet me in a quiet room sometimes take me for cold; a few minutes of real conversation usually changes their mind. I believe the journey is the destination, so I try to enjoy the walk and not just count the steps.",
   },
 
   // -------------------------------------------------------------------
@@ -107,14 +104,14 @@ export const content = {
     title: "Family",
     subtitle: "The people outside the house.",
     members: [
-      { role: "my mum", name: "", line: "She feeds everyone who comes through the door. She taught me to cook, and to notice when someone needs checking on." },
-      { role: "my dad", name: "", line: "Quiet and steady, and able to repair almost anything. He calls once a week and asks the same three questions, which I have come to look forward to." },
-      { role: "my sister", name: "", line: "The person I call when something has gone wrong, and the first person I call when something has gone right." },
-      { role: "my younger brother", name: "", line: "The liveliest of the four of us. He is becoming genuinely good at what he does, and I am proud of him." },
-      { role: "my youngest brother", name: "", line: "Still at home, and still sending me everything that made him laugh. I read all of it." },
+      { role: "my dad", name: "", line: "My friends have heard me call him a real-life Thomas Shelby, minus the razor-blade cap. He came from nothing and decided he would succeed, and then he did. Much of my drive comes from watching him." },
+      { role: "my mum", name: "", line: "Loving and endlessly kind. All she has ever wanted for her children is that we are happy, and she means it completely." },
+      { role: "my big sister", name: "", line: "The wise one. Smart and kind, and somehow able to give her little brothers advice without ever sounding bossy. We actually listen to her." },
+      { role: "my younger brother", name: "", line: "The social one. He has friends wherever he goes and is the most fun person to spend an afternoon with." },
+      { role: "my youngest brother", name: "", line: "The out-of-the-box thinker. He questions everything and is brilliant at maths and logic. He reminds me of who I was as a kid." },
     ],
     // One line under the figures. Optional ("").
-    note: "We are a close family. Sunday lunch is not optional, and you would be very welcome at it.",
+    note: "We grew up in a small village, and each of us left for the city at twelve. We now live in different cities, but every Christmas Eve we find our way back to the same table.",
   },
 
   // -------------------------------------------------------------------
@@ -126,12 +123,11 @@ export const content = {
     subtitle: "The plain details, including the ones people usually leave out.",
     rows: [
       { label: "Height", value: "175 cm" },
-      { label: "Weight", value: "[ 00 ] kg" },
-      { label: "Age", value: "[ 00 ]" },
-      { label: "Languages", value: "[ One ] fluently, and enough [ another ] to hold a simple conversation" },
-      { label: "Birth order", value: "Eldest of four" },
-      { label: "Hours", value: "A morning person. Asleep by eleven, awake before the alarm." },
-      { label: "Drinks", value: "Occasionally, and coffee every day." },
+      { label: "Weight", value: "73 kg" },
+      { label: "Age", value: "24" },
+      { label: "Languages", value: "Bahasa Indonesia, fluently. English, comfortably. Mandarin, a beginner's amount. German, I understand more than I can say." },
+      { label: "Birth order", value: "Second of four: one big sister, two little brothers" },
+      { label: "Hours", value: "A morning person. I rise and rest with the sun, more or less, as people have since the dawn of time." },
     ],
   },
 
@@ -142,19 +138,25 @@ export const content = {
   //  honest 2 is more useful here than a flattering 5.
   // -------------------------------------------------------------------
   values: {
-    // If you would rather this section carried faith or belief, it can: the
-    // shape is the same (a title and a few named items) and so are the plaques.
     title: "What I try to live by",
     subtitle: "Some of these I hold to well. Others I am still working on.",
+    // `glyph` is what is painted on the plaque — one or two Chinese
+    // characters, traditional forms — in place of the English `name`, which
+    // is what everything else (the card, the document, print, alt text)
+    // shows. Change either on its own. The painted font is served with only
+    // the characters listed in index.html (the Noto Serif TC link, its
+    // `text=` part): add a new character there too, or it falls back to
+    // whatever Chinese font the visitor's system has.
+    //   自愛 zì'ài, to care for oneself · 毅 yì, fortitude, the harder road ·
+    //   勇 yǒng, courage, stepping out · 遊 yóu, to journey · 律 lǜ,
+    //   discipline · 家 jiā, home, family
     items: [
-      { name: "Kindness", level: 5, note: "To the people serving me, to strangers, and to myself on a difficult day. The last of those took the longest to learn." },
-      { name: "Honesty", level: 4, note: "I will tell you the true thing, and gently. I am still learning to say it sooner than I do." },
-      { name: "Patience", level: 3, note: "I have a great deal of it for people and rather less of it for machines." },
-      { name: "Curiosity", level: 5, note: "I read the acknowledgements first. I want to know who a person loves." },
-      { name: "Rest", level: 2, note: "The one I neglect. I am trying to keep some evenings with nothing in them at all." },
-      { name: "Showing up", level: 5, note: "If I have said I will be somewhere, I am there, usually early and usually with something to eat." },
-      { name: "Letting go", level: 2, note: "I hold on to small mistakes for far longer than they deserve. It is getting better." },
-      { name: "Family", level: 5, note: "Sunday lunch and a weekly call. Neither is negotiable, and neither feels like an obligation." },
+      { name: "Taking care of myself", glyph: "自愛", level: 5, note: "I believe my feelings are mine to look after. So I take care of myself, for my own sake and for whoever I end up with. Two people who look after themselves have so much more to give each other." },
+      { name: "The harder path", glyph: "毅", level: 4, note: "I want my future self to thank me for the uncomfortable choices. An easy life rarely builds a strong character." },
+      { name: "Stepping out", glyph: "勇", level: 4, note: "Random events, new people, things I've never tried. Comfort is lovely, but it's rarely where I grow." },
+      { name: "Enjoying the journey", glyph: "遊", level: 4, note: "The destination matters less than I used to think. I'm learning to enjoy the walk." },
+      { name: "Discipline", glyph: "律", level: 5, note: "The gym every morning before work. Small habits, kept, are what hold the rest of my life together." },
+      { name: "Family", glyph: "家", level: 5, note: "Spread across different cities, but Christmas Eve is always together." },
     ],
   },
 
@@ -167,53 +169,51 @@ export const content = {
     // Most recent first. `dates` is stencilled on the crate, keep it short.
     roles: [
       {
-        title: "[ Your current role ]",
-        org: "[ Where, described generally — no company names on a public page ]",
+        title: "Software engineer",
+        org: "Bank Mandiri",
         dates: "[ 20XX ] – now",
         bullets: [
-          "What the job actually involves, in a sentence a stranger could follow.",
-          "The part of it you're good at, and the part you like, if they're different.",
-          "Something it has taught you about yourself.",
+          "What I like most is the people. They're genuinely fun to work with, and that makes the hard days lighter.",
+          "I'd like to grow toward leading teams, not only writing code.",
         ],
       },
       {
-        title: "[ A previous role ]",
-        org: "[ Where, generally ]",
+        title: "Informatics Engineering",
+        org: "Brawijaya University",
         dates: "[ 20XX ] – [ 20XX ]",
-        bullets: ["What you did there.", "Why you left, honestly and briefly."],
-      },
-      {
-        title: "[ Your degree or training ]",
-        org: "[ Field of study ]",
-        dates: "[ 20XX ] – [ 20XX ]",
-        bullets: ["What you studied and whether you'd choose it again.", "The one thing from it you still use every week."],
+        bullets: ["I grew up a gamer, and that turned into a real curiosity about technology and code. Studying informatics felt like the natural next step, so I applied and got in."],
       },
     ],
   },
 
   // -------------------------------------------------------------------
-  //  HOBBIES  —  the music corner, the badminton court, the outdoor gym
+  //  HOBBIES  —  the music corner, the badminton court, the outdoor gym,
+  //  the chess table
   // -------------------------------------------------------------------
   hobbies: {
     title: "Hobbies",
     subtitle: "The three things you will most often find me doing, and a few others.",
     music: {
       label: "Music",
-      text: "The guitar since I was fourteen, and the piano for the last few years. I play in the evenings, mostly for my own sake, and mostly pieces people would recognise. I would be glad to play for you, and nervous about it, and would do it anyway.",
+      text: "Guitar and piano, mostly in the evenings and mostly for myself. If you sing, though, I'd love to be the one playing along.",
     },
     badminton: {
-      label: "Badminton",
-      text: "Twice a week when I can manage it. I keep score and I like to win, but never at the cost of the evening. If you have never played, I would enjoy teaching you the serve.",
+      label: "Racket sports",
+      text: "Badminton, padel and tennis. If it involves a racket, I'm in. Chess too, which absolutely counts as a sport when you're the one losing.",
     },
     gym: {
       label: "The gym",
-      text: "Mornings, before work, and nothing ambitious. It has far less to do with how I look than with sleeping well and being able to carry the shopping in one trip.",
+      text: "Every morning before work. It clears my head, and it's the habit that keeps everything else in order.",
+    },
+    chess: {
+      label: "Chess",
+      text: "Online most evenings, two or three quick games before bed, and over the board on a Sunday with a friend who usually beats me. I'm rated around 1400: good enough to see a plan coming, not always good enough to stop it. I like that it's quiet, and that there is nowhere to hide in it.",
     },
     // Anything else, briefly. Optional ([]).
     others: [
-      { label: "Cooking for people", detail: "Properly, and often. Ask me what I would make you." },
-      { label: "Long walks", detail: "Usually longer than intended, and usually ending at a bakery." },
-      { label: "Reading", detail: "Novels, slowly, in bed, beginning with the acknowledgements." },
+      { label: "Reading", detail: "Slowly but steadily." },
+      { label: "Nature", detail: "Anything green, open and quiet, which is a good antidote to Jakarta traffic." },
+      { label: "Meeting new people", detail: "Random events, on purpose. It's how I step out of my comfort zone." },
     ],
   },
 
@@ -260,19 +260,19 @@ export const content = {
     subtitle: "The next few years, as honestly as I can see them.",
     // 3–5 lines about life in the next few years.
     years: [
-      "To stay in [ city ] for the time being. I am happy here and my family is close by. I would move for a good reason, though not simply for a change of scenery.",
-      "To continue the work I do, become better at it, and stop allowing it to take up my evenings.",
-      "A small place of my own with a proper kitchen and a little outside space, and a dog once the place allows for one.",
-      "To learn the piano well enough to play a piece from beginning to end without stopping.",
+      "To stay in Jakarta. My life and my work are here, and I'm happy in it.",
+      "To keep growing in tech, moving step by step toward leading teams.",
+      "To travel when I can, around Indonesia and further away.",
+      "To keep improving my body, my mind and my spirit. You can't have both an easy life and a great character, so I'd rather choose the uncomfortable thing now.",
     ],
     // 2–4 lines about what you want from dating, plainly.
     dating: [
-      "Something that becomes a life, not a series of evenings. I'm not in a hurry, but I'm not casual about it either.",
-      "Someone I can be ordinary with: errands, cooking, the same walk on a Sunday. I'd like that to feel like enough, because for me it is.",
-      "I'd like children one day. I say it early so nobody wastes their time.",
+      "Someone to experience life with: sunsets at Baywalk Mall, a movie night, a run around GBK.",
+      "She sings, I play the guitar, and we have each other's back.",
+      "Someone intelligent I can talk with about almost anything, who understands her feelings and can say them clearly.",
     ],
     // One closing line. Optional ("").
-    note: "I know that is a great deal to state so early. I would rather say it now than later.",
+    note: "I'm not in a hurry, but I'm serious about it.",
   },
 
   // -------------------------------------------------------------------
@@ -285,25 +285,24 @@ export const content = {
     subtitle: "A short list, because it is the short list that matters.",
     // What genuinely matters. 3–5 items. Plain.
     essential: [
-      "Kind to the people serving them, and to the people who can do nothing for them.",
-      "Able to disagree with me and remain on my side while we do it.",
-      "Wants an ordinary life, and considers that a good thing to want.",
-      "Says what they mean, particularly when it is difficult to say.",
+      "Emotional intelligence: she understands her feelings and can talk about them.",
+      "A sharp, curious mind I can talk with about anything, silly or serious.",
+      "Kind eyes.",
+      "A beautiful smile.",
     ],
     // Nice-to-haves. 3–5 items.
     desirable: [
-      "Enjoys eating, and enjoys talking about what we are going to eat next.",
-      "Has something they are not very good at and keeps doing it regardless.",
-      "Content to read the map while I drive, or to drive while I read it.",
-      "Gets along with my family, who will certainly get along with them.",
+      "Loves to sing, because I'd love to play the guitar for her.",
+      "Up for a Marvel marathon, and has opinions about the watching order.",
+      "Enjoys the gym, or wouldn't mind a morning workout together.",
     ],
     // What genuinely would not work. 3–5 items. State them plainly and
     // courteously — this is information, not an accusation.
     rejections: [
-      "Unkindness towards people who are serving them or working for them.",
-      "Speaking cruelly about former partners.",
-      "Not wanting children, or not wanting to discuss it. Both are entirely reasonable positions; neither is compatible with mine.",
-      "Being consistently late and untroubled by it.",
+      "Being emotionally unavailable.",
+      "Anger that turns explosive or hurtful.",
+      "No interest in learning, questioning or thinking things through.",
+      "Not caring for herself. I hope she loves herself as much as she deserves to be loved.",
     ],
     // Painted on the sign beside the gate. Keep it to a few words.
     gateSign: "Welcome to Ido's Island",
@@ -318,11 +317,11 @@ export const content = {
   bench: {
     // Handwritten heading on the note. 2–4 words.
     heading: "honestly",
-    // 80–140 words. Write this last, and write it plainly.
+    // 80–140 words.
     text:
-      "I am not looking for someone to repair me, and I am not looking for someone to repair. I am looking for a person I can be entirely ordinary with: cooking on a Tuesday evening, disagreeing about nothing of consequence, falling asleep during the film I insisted we watch. I take people seriously. I will remember something you mentioned in passing and return to it months later. I am slow to let people in, which I am working on, and I would rather tell you that now than have you discover it. If any of this sounds like you, I would be very glad to hear from you.",
+      "I'm looking for an intelligent, kind woman to share a life with and to build one together. Someone I can talk to about anything, from a good book to a bad day. I'll be honest: I fall in love slowly. I take my time getting to know someone, and I'd rather do that than rush into something neither of us understands. But once I'm in, I'm all in. I believe we are each responsible for our own feelings, and that the best partners hold each other up when things get heavy. So I take care of myself, for me and for you, and I hope you'll do the same. If that sounds like you, I'd love to hear from you.",
     // Signature line. Optional ("").
-    signoff: "— [ your first name ]",
+    signoff: "— Ido",
   },
 
   // -------------------------------------------------------------------
@@ -330,7 +329,7 @@ export const content = {
   // -------------------------------------------------------------------
   closing: {
     title: "Get in touch",
-    text: "A message is enough to begin with. Tell me one true thing about your week, and I will take it from there.",
+    text: "A message is enough to begin with. Tell me the best part of your week, and I'll take it from there.",
     // Contact rows. Shown as selectable text with a copy button, because
     // email and phone links don't work everywhere.
     //   `label` — "Email", "Instagram", "Signal", etc.
@@ -338,7 +337,8 @@ export const content = {
     //   `href`  — optional link (an https:// URL works best). "" for none.
     contacts: [
       { label: "Email", value: "[ you@example.com ]", href: "" },
-      { label: "Instagram", value: "[ @yourhandle ]", href: "" },
+      { label: "LinkedIn", value: "linkedin.com/in/idomunthe", href: "https://www.linkedin.com/in/idomunthe" },
+      { label: "Instagram", value: "@idomunthe3", href: "https://www.instagram.com/idomunthe3" },
     ],
     // One last handwritten line. Optional ("").
     signoff: "thank you for looking around.",
@@ -356,8 +356,8 @@ export const content = {
     hair: "#4a3324",
     // "short" or "long"
     hairStyle: "short",
-    shirt: "#8fae8a",
-    trousers: "#c9b39a",
+    shirt: "#1f1f1f",
+    trousers: "#efe4cc",
   },
 
   // -------------------------------------------------------------------

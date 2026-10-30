@@ -2,10 +2,10 @@
 // stdout and an SVG file, with warnings about the layout. Re-run after any
 // change to positions:   node scripts/map.mjs   (writes scripts/map.svg)
 import { writeFileSync } from "node:fs";
-import { ISLAND, LANDMARKS, AVATAR, OBSTACLES, LAMPS, CAMERA, FIRE, NESTS, OWL } from "../src/three/island.config.js";
+import { ISLAND, LANDMARKS, AVATAR, OBSTACLES, LAMPS, CAMERA, FIRE, NESTS, OWL, VISITS } from "../src/three/island.config.js";
 import { nestPlacements, CANOPY } from "../src/three/life/nests.js";
 import { content } from "../src/content.js";
-import { familyLayout, segDist as famSegDist, segmentsCross } from "../src/three/landmarks/familyLayout.js";
+import { familyLayout, visitPlan, visitRoute, segDist as famSegDist, segmentsCross } from "../src/three/landmarks/familyLayout.js";
 
 const R = ISLAND.radius;
 const FIG = AVATAR.radius;
@@ -145,6 +145,57 @@ const nests = nestPlacements();
     }
   });
 }
+// the family's visitors: every role matched, each spot inside the island,
+// clear of the figure's own stand there and of every other place's footprint,
+// and the walks — by day out of the row, by night out of the fire circle,
+// then away — clear of the fire, of the others at rest, and of every
+// footprint, tree and lamp they pass
+const visitors = [];
+{
+  const fam = LANDMARKS.find((l) => l.id === "family");
+  const fmembers = (content.family?.members || []).slice(0, 8);
+  const lay = familyLayout(fmembers);
+  const plan = visitPlan(fmembers);
+  for (const [place, v] of Object.entries(VISITS || {})) {
+    const pl = plan[place];
+    const lm = LANDMARKS.find((l) => l.id === place);
+    if (!pl || !lm) {
+      warn.push(`visitors: no place "${place}"`);
+      continue;
+    }
+    if (pl.members.length < (v.who || []).length) warn.push(`visitors: ${place}: only ${pl.members.length} of ${v.who.length} roles matched (${v.who.join(", ")})`);
+    pl.spots.forEach((s, k) => {
+      const [wx, wz] = s.world;
+      const who = fmembers[s.member]?.role || "?";
+      visitors.push({ x: wx, z: wz, place, who });
+      if (Math.hypot(wx, wz) > R - 0.3) warn.push(`visitors: ${who} at ${place} stands over the shore`);
+      const st = lm.stand;
+      const dStand = Math.min(Math.hypot(wx - st.at[0], wz - st.at[1]), ...(st.via || []).map(([x, z]) => Math.hypot(wx - x, wz - z)));
+      if (dStand < 0.5) warn.push(`visitors: ${who} at ${place} is ${dStand.toFixed(2)} m from the figure's own spot`);
+      for (const f of all) if (f.owner !== "family" && f.owner !== place && Math.hypot(wx - f.x, wz - f.z) < f.r + FIG) warn.push(`visitors: ${who} at ${place} stands on ${f.owner}`);
+      pl.spots.forEach((o, j) => {
+        if (j < k && Math.hypot(o.world[0] - wx, o.world[1] - wz) < 0.4) warn.push(`visitors: the two at ${place} stand on each other`);
+      });
+      for (const mode of ["day", "night"]) {
+        const route = visitRoute(lay, s.member, mode, [s.x, s.z], pl.viaLocal);
+        const others = lay.filter((_, i) => i !== s.member).map((o) => (mode === "day" ? [o.x, o.z] : [o.seat.x, o.seat.z]));
+        for (let i = 0; i < route.length - 1; i++) {
+          const [ax, az] = route[i];
+          const [bx, bz] = route[i + 1];
+          if (famSegDist(ax, az, bx, bz, FIRE.local[0], FIRE.local[2]) < FIRE.ringRadius + 0.16) warn.push(`visitors: ${who}'s ${mode} walk to ${place} crosses the fire`);
+          for (const [ox, oz] of others) if (famSegDist(ax, az, bx, bz, ox, oz) < 0.22) warn.push(`visitors: ${who}'s ${mode} walk to ${place} walks through someone at (${ox.toFixed(2)}, ${oz.toFixed(2)}) in the family's metres`);
+          const wa = rot(fam, ax, az);
+          const wb = rot(fam, bx, bz);
+          for (const f of all) {
+            if (f.owner === "family") continue;
+            if (f.owner === place && Math.hypot(wb[0] - f.x, wb[1] - f.z) < f.r + FIG) continue; // the stool is inside the table's own circle
+            if (segDist(wa, wb, f.x, f.z) < f.r + FIG) warn.push(`visitors: ${who}'s ${mode} walk to ${place} crosses ${f.owner} at (${f.x.toFixed(1)}, ${f.z.toFixed(1)})`);
+          }
+        }
+      }
+    });
+  }
+}
 // avatar routing: every path segment vs every circle with the figure's radius
 let blocked = 0;
 for (const [a, b] of segs) for (const f of all) if (segDist(a, b, f.x, f.z) < f.r + FIG) blocked++;
@@ -221,6 +272,7 @@ for (const p of path) put(p[0], p[1], "+");
 for (const t of trees) put(t.x, t.z, "T");
 for (const l of lamps) put(l.x, l.z, "i");
 for (const n of nests) put(n.world[0], n.world[2], "n");
+for (const v of visitors) put(v.x, v.z, "@");
 for (const lm of LANDMARKS) {
   for (const [x, z] of lm.stand.via || []) put(x, z, "v");
   put(lm.stand.at[0], lm.stand.at[1], "x");
@@ -230,11 +282,12 @@ const letters = { house: "H", family: "F", shrine: "S", workshop: "W", hobbies: 
 for (const lm of LANDMARKS) put(lm.at[0], lm.at[2], letters[lm.id] || "?");
 put(camXZ[0], camXZ[1], "C");
 console.log(`island radius ${R} m · path ${path.length} vertices${(ISLAND.spurs || []).length ? ` + ${ISLAND.spurs.length} spurs` : ""} · overview camera at (${camXZ[0].toFixed(1)}, ${camXZ[1].toFixed(1)}) [C]`);
-console.log("H house  F family  S shrine  W workshop  M hobbies  P photos  A path-exit  J gate/jetty  T tree  i lamp  n nest  x stand  v way in  h home  = path  + waypoint  o footprint");
+console.log("H house  F family  S shrine  W workshop  M hobbies  P photos  A path-exit  J gate/jetty  T tree  i lamp  n nest  @ visitor's spot  x stand  v way in  h home  = path  + waypoint  o footprint");
 console.log(grid.map((r) => r.join("")).join("\n"));
 console.log("places (angle from centre, distance):");
 for (const r of ring) console.log(`  ${r.id.padEnd(9)} ${(((r.ang * 180) / Math.PI + 360) % 360).toFixed(0).padStart(4)}°  ${r.d.toFixed(2)} m`);
 console.log("angular gaps: " + gaps.map((g) => `${g.deg.toFixed(0)}°`).join("  "));
+console.log(`visitors: ${visitors.map((v) => `${v.who} → ${v.place}`).join(", ")}`);
 console.log(`nests: ${nests.length} in trees ${nests.map((n) => n.tree).join(", ")} at ${nests.map((n) => n.world[1].toFixed(2)).join("/")} m`);
 console.log(warn.length ? "WARNINGS:\n  " + warn.join("\n  ") : "no warnings");
 
@@ -250,6 +303,7 @@ for (const f of feet) svg += `<circle cx="${sx(f.x)}" cy="${sz(f.z)}" r="${sr(f.
 for (const t of trees) svg += `<circle cx="${sx(t.x)}" cy="${sz(t.z)}" r="${sr(t.r)}" fill="#7fb07a" stroke="#4a3324"/>\n`;
 for (const l of lamps) svg += `<circle cx="${sx(l.x)}" cy="${sz(l.z)}" r="4" fill="#ffd27a" stroke="#4b5450"/>\n`;
 for (const n of nests) svg += `<circle cx="${sx(n.world[0])}" cy="${sz(n.world[2])}" r="3" fill="#8c6543" stroke="#ffb347"/>\n`;
+for (const v of visitors) svg += `<circle cx="${sx(v.x)}" cy="${sz(v.z)}" r="4" fill="none" stroke="#2b4bc2" stroke-width="1.5" stroke-dasharray="2 2"/>\n`;
 for (const lm of LANDMARKS) {
   svg += `<text x="${sx(lm.at[0])}" y="${sz(lm.at[2]) - 6}" text-anchor="middle" font-weight="bold">${lm.id}</text>\n`;
   for (const [x, z] of lm.stand.via || []) svg += `<circle cx="${sx(x)}" cy="${sz(z)}" r="3.5" fill="none" stroke="#2b4bc2" stroke-width="1.5"/>\n`;

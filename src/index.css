@@ -1320,3 +1320,27 @@ html.island-mode body {
   width: 100%;
   background: linear-gradient(90deg, rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.08));
 }
+
+/* The album's description types itself in (Lightbox.jsx): the full text is
+   laid out invisibly to hold the page's height, the typed copy sits over it,
+   and a caret blinks at the end until it is done. */
+.album-desc-layer {
+  position: relative;
+  display: block;
+}
+.album-desc-ghost {
+  visibility: hidden;
+}
+.album-desc-typed {
+  position: absolute;
+  inset: 0;
+}
+.album-caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: -0.15em;
+  background: var(--ink);
+  animation: caret-blink 1s steps(1, end) infinite;
+}

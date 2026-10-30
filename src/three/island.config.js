@@ -177,10 +177,7 @@ export const LANDMARKS = [
     camera: { distance: 5.8, polar: 1.05, azimuth: 1.5, lookAt: [0, 1.0, 0] },
     // sits on the bench beside the door, feet on the ground
     stand: { at: [-3.08, -1.79], seat: 0.19, face: 1.13, action: "sit" },
-    footprint: [
-      [0, 0, 1.5],
-      [0.55, 1.4, 0.3],
-    ],
+    footprint: [[0, 0, 1.5]],
   },
   {
     // The family stands in the middle of the island, facing the front.
@@ -247,6 +244,8 @@ export const LANDMARKS = [
       [0.5, 0, 0.75],
       [-1.55, 0.1, 0.9],
       [0.2, 1.35, 0.85],
+      // the chess table and its stools, east of the court
+      [1.9, 0.25, 0.55],
     ],
   },
   {
@@ -345,7 +344,74 @@ export const FIRE = {
     sitSeconds: [0.7, 1.2], // [kids, adults]
     riseSeconds: [0.7, 1.3], // [kids, adults]
     turnRate: 7, // how fast they turn to face where they're going
+    // going visiting (VISITS): by day a person steps back out of the row to
+    // this z and along behind it to the row's end at ±rowEnd before setting
+    // off; by night, out of the fire circle by ringOut past the seats and
+    // round its outside. The way back is the same walk reversed.
+    rowBack: -0.6,
+    rowEnd: 1.5,
+    ringOut: 0.45,
   },
+};
+
+// Who comes visiting when a place is selected: these family members get up,
+// walk there (the campfire walk, round the fire ring and round each other),
+// do something, and walk back when the place is left. Night has priority:
+// at night everyone stays round the fire and nobody goes visiting, and
+// night falling while they are away calls them back. Every move runs to its
+// end before the next is taken, as at the campfire.
+//   who     — one pattern per visitor, matched against the role in content.js
+//             (the first unclaimed member that matches)
+//   at      — [x, z] in that place's own metres, one per visitor
+//   face    — yaw in that place's metres, one per visitor
+//   seat    — height of what they sit on there; leave out to stand
+//   act     — "chess" (the table listens on the bus) | "look"
+//   stagger — seconds between the first and the second setting off
+// Chess: `think` is how long a player considers (seconds, a range) before
+// a `reach` of this many seconds moves a piece. Look: a bit of business
+// (point, lean in, turn to the other, a small laugh) lasts `cue` seconds
+// and the next comes `gap` seconds later, each person on their own clock.
+export const VISITS = {
+  hobbies: {
+    who: ["dad|father", "younger brother"],
+    // the two stools, in the hobbies' metres (CHESS.table.at ± stool, turned by its yaw)
+    at: [
+      [2.294, 0.106],
+      [1.506, 0.394],
+    ],
+    face: [-1.22, 1.92],
+    // the way in: east of the gym, then to the stools
+    via: [[2.4, 1.6]],
+    seat: 0.15,
+    act: "chess",
+    stagger: 1.4,
+    think: [2.2, 6.0],
+    reach: 1.2,
+  },
+  washing: {
+    who: ["mum|mother", "sister"],
+    // under the right-hand photographs, clear of the figure's own spot
+    at: [
+      [-0.95, 0.75],
+      [-1.5, 0.95],
+    ],
+    face: [-2.85, 2.85],
+    act: "look",
+    stagger: 1.0,
+    cue: [1.2, 2.4],
+    gap: [2.5, 6.0],
+  },
+};
+
+// The chess table at the hobbies: where it stands (hobbies' metres), its
+// stone's height, the board, the stools; and how a piece moves when a
+// player reaches — a lift and a slide, and the odds a move takes a piece.
+export const CHESS = {
+  table: { at: [1.9, 0, 0.25], yaw: 0.35, top: 0.1, stool: 0.42, seat: 0.14 },
+  board: 0.34,
+  slide: 0.45, // seconds
+  lift: 0.02, // metres
+  capture: 0.22, // chance a move takes a neighbouring piece
 };
 
 // The owl: only there at night. As the lamps come on (DAY.lightsOn) it
@@ -449,12 +515,22 @@ export const INTRO = {
 // Nature ambience (off by default; a click turns it on, and only then are
 // the files fetched — see src/audio/ambience.js). Levels are linear gains;
 // keep them low, it's a bed, not a feature.
-//   Files, both from BigSoundBank (bigsoundbank.com), CC0 / public domain —
+//   Files, all from BigSoundBank (bigsoundbank.com), CC0 / public domain —
 //   free for any use, no attribution required:
 //     public/audio/sea-day.mp3        medium sea waves with Sandwich tern calls, 0:58
 //     public/audio/night-insects.mp3  nocturnal insects and wind in a hedge, 2:31
+//     public/audio/owl-3459.mp3       tawny owl, a single call, 0:02
+//     public/audio/owl-1763.mp3       tawny owl, a sequence of calls, 0:09
+//     public/audio/owl-1764.mp3       tawny owl, a sequence of calls, 0:08
 export const AUDIO = {
-  files: { sea: "audio/sea-day.mp3", night: "audio/night-insects.mp3" },
+  // the owl's clips: the single call first (it is the one played most)
+  files: { sea: "audio/sea-day.mp3", night: "audio/night-insects.mp3", owl: ["audio/owl-3459.mp3", "audio/owl-1763.mp3", "audio/owl-1764.mp3"] },
+  // The owl hoots now and then while it is on its post (never while it is
+  // flying, never by day): a one-shot every `gap` seconds, randomised, the
+  // first `first` seconds after it lands, never the same clip twice running,
+  // the single call `shortOdds` of the time. Quiet: it sits under the
+  // insects. Panned to where the post is on screen.
+  owl: { level: 0.35, first: [4, 12], gap: [20, 50], shortOdds: 0.65 },
   master: 0.32, // everything, 0–1
   sea: { day: 1.0, night: 0.55 }, // the sea ducks at night so the insects sit on top
   insects: 0.9, // the night layer at full night

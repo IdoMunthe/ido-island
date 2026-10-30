@@ -2,8 +2,9 @@
 // stepping stones, a pair of stone lanterns flanking the approach (lit at
 // dusk), a tsukubai basin with a bamboo spout and a ladle, moss, a few
 // weathered stones and a small maple. Beside it a rack of ema — one wooden
-// votive plaque per value, its name painted on in the hand-lettering face
-// — each swinging gently on its own cord. Pairs with the torii: vermilion
+// votive plaque per value, its character(s) (`glyph` in content.js) painted
+// on in a brushed serif, or its name in the hand-lettering face when no
+// glyph is set — each swinging gently on its own cord. Pairs with the torii: vermilion
 // accents, matte clay, restraint. Card: values.
 import { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
@@ -34,7 +35,7 @@ export function Shrine({ config }) {
   const plaques = useRef([]);
   const [labels, setLabels] = useState(null);
   useEffect(() => {
-    const t = values.map((v) => toTexture(paintEma(v.name || "", isTouch ? 256 : 512)));
+    const t = values.map((v) => toTexture(paintEma(v.glyph || v.name || "", isTouch ? 256 : 512, { glyph: !!v.glyph })));
     setLabels(t);
     painted();
     return () => t.forEach((x) => x.dispose());

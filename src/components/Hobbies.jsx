@@ -1,16 +1,16 @@
 import { content } from "../content.js";
 import { Section } from "./Section.jsx";
 
-// Hobbies: the three main ones, then anything else briefly. The document
-// sets the three as magazine columns and the rest as a run-in list in the
+// Hobbies: the four main ones, then anything else briefly. The document
+// sets the four as magazine columns and the rest as a run-in list in the
 // text column.
 export function HobbiesBody({ doc = false }) {
   const h = content.hobbies;
-  const main = [h.music, h.badminton, h.gym].filter((x) => x && x.text);
+  const main = [h.music, h.badminton, h.gym, h.chess].filter((x) => x && x.text);
   if (doc) {
     return (
       <>
-        <ul className="print-flat grid gap-x-8 gap-y-7 sm:grid-cols-3">
+        <ul className="print-flat grid gap-x-8 gap-y-7 sm:grid-cols-2 md:grid-cols-4">
           {main.map((item) => (
             <li key={item.label} className="avoid-break border-t border-rule pt-4">
               <h3 className="doc-h3 text-ink">{item.label}</h3>

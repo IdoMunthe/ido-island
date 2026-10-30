@@ -15,11 +15,21 @@ const F_DISPLAY = '"Fraunces", "Iowan Old Style", Georgia, serif';
 const F_MONO = '"IBM Plex Mono", Menlo, Consolas, monospace';
 const F_HAND = '"Nanum Pen Script", "Segoe Print", cursive';
 const F_BODY = '"Instrument Sans", "Helvetica Neue", Arial, sans-serif';
+// The brushed characters on the ema. Served by Google Fonts subset to the
+// characters in use (index.html, the `text=` part of the link); the
+// fallbacks are whatever Chinese serif the system has.
+export const EMA_FONT = { family: "Noto Serif TC", weight: 600 };
+const F_CJK = `"${EMA_FONT.family}", "Noto Serif CJK TC", "Songti TC", "PingFang TC", "Microsoft JhengHei", serif`;
 
-export async function waitForFonts(timeout = 1800) {
+// `cjkText` is every character the ema will paint: the CJK face is split
+// into unicode-range pieces, and only the pieces those characters need are
+// fetched — a plaque painted before they arrive is a blank plaque.
+export async function waitForFonts(timeout = 1800, cjkText = "") {
   if (typeof document === "undefined" || !document.fonts?.load) return;
   const wanted = ['500 60px "Fraunces"', 'italic 400 30px "Fraunces"', '500 20px "IBM Plex Mono"', '600 20px "IBM Plex Mono"', '400 40px "Nanum Pen Script"', '400 20px "Instrument Sans"'];
-  await Promise.race([Promise.all(wanted.map((f) => document.fonts.load(f).catch(() => null))), new Promise((r) => setTimeout(r, timeout))]);
+  const loads = wanted.map((f) => document.fonts.load(f).catch(() => null));
+  if (cjkText) loads.push(document.fonts.load(`${EMA_FONT.weight} 40px "${EMA_FONT.family}"`, cjkText).catch(() => null));
+  await Promise.race([Promise.all(loads), new Promise((r) => setTimeout(r, timeout))]);
 }
 
 function makeCanvas(w, h) {
@@ -144,38 +154,17 @@ export function paintPolaroidFront(img, caption, size = 512) {
 }
 
 // The house sign: the name large, the tagline in italics beneath.
-export function paintSign(name, tagline, W = 1024) {
-  const H = Math.round(W * (0.42 / 0.9));
-  const c = makeCanvas(W, H);
-  const ctx = c.getContext("2d");
-  ctx.fillStyle = PAPER;
-  ctx.fillRect(0, 0, W, H);
-  fibres(ctx, W, H, 0.04, 900, 37);
-  ctx.strokeStyle = "#b98a5e";
-  ctx.lineWidth = W * 0.012;
-  ctx.strokeRect(W * 0.03, H * 0.06, W * 0.94, H * 0.88);
-  ctx.fillStyle = INK;
-  ctx.textAlign = "center";
-  let size = W * 0.1;
-  setFont(ctx, 500, size, F_DISPLAY);
-  while (ctx.measureText(name).width > W * 0.84 && size > W * 0.04) {
-    size -= W * 0.006;
-    setFont(ctx, 500, size, F_DISPLAY);
-  }
-  ctx.fillText(name, W / 2, H * (tagline ? 0.5 : 0.62));
-  if (tagline) {
-    ctx.fillStyle = INK_SOFT;
-    setFont(ctx, 400, W * 0.04, F_DISPLAY, "italic");
-    ctx.fillText(tagline, W / 2, H * 0.78, W * 0.86);
-  }
-  ctx.textAlign = "left";
-  return c;
-}
-
-// An ema: a wooden votive plaque with a value written on it by hand.
-export function paintEma(text, W = 512) {
+// An ema: a wooden plaque with the value painted on. With `glyph` the text
+// is one or two Chinese characters, painted large and centred in the brushed
+// serif, filling the board the way a real ema's do; otherwise the English
+// name in the hand-lettering face. `canvas`: paint onto this one (scripts).
+export function paintEma(text, W = 512, { glyph = false, canvas = null } = {}) {
   const H = Math.round(W * 0.9);
-  const c = makeCanvas(W, H);
+  const c = canvas || makeCanvas(W, H);
+  if (canvas) {
+    canvas.width = W;
+    canvas.height = H;
+  }
   const ctx = c.getContext("2d");
   ctx.fillStyle = "#d9b98a";
   ctx.fillRect(0, 0, W, H);
@@ -194,18 +183,52 @@ export function paintEma(text, W = 512) {
   ctx.fillStyle = INK;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  let size = W * 0.26;
-  setFont(ctx, 400, size, F_HAND);
-  const lines = wrapLines(ctx, String(text || ""), W * 0.8).slice(0, 2);
-  while (lines.some((l) => ctx.measureText(l).width > W * 0.82) && size > W * 0.1) {
-    size -= W * 0.02;
+  if (glyph) {
+    const chars = Array.from(String(text || "").replace(/\s+/g, ""));
+    // one character fills half the board; two sit side by side
+    const size = chars.length <= 1 ? W * EMA_GLYPH.one : Math.min(W * EMA_GLYPH.one, (W * EMA_GLYPH.span) / chars.length);
+    setFont(ctx, EMA_FONT.weight, size, F_CJK);
+    ctx.save();
+    // brushed ink sits into the grain: a little bleed under the strokes
+    ctx.shadowColor = "rgba(24, 32, 29, 0.38)";
+    ctx.shadowBlur = W * 0.014;
+    ctx.fillText(chars.join(""), W / 2, H * EMA_GLYPH.y);
+    ctx.restore();
+    ctx.fillText(chars.join(""), W / 2, H * EMA_GLYPH.y);
+  } else {
+    let size = W * 0.26;
     setFont(ctx, 400, size, F_HAND);
+    const lines = wrapLines(ctx, String(text || ""), W * 0.8).slice(0, 2);
+    while (lines.some((l) => ctx.measureText(l).width > W * 0.82) && size > W * 0.1) {
+      size -= W * 0.02;
+      setFont(ctx, 400, size, F_HAND);
+    }
+    const lh = size * 1.05;
+    const y0 = H * 0.58 - ((lines.length - 1) * lh) / 2;
+    lines.forEach((l, i) => ctx.fillText(l, W / 2, y0 + i * lh));
   }
-  const lh = size * 1.05;
-  const y0 = H * 0.58 - ((lines.length - 1) * lh) / 2;
-  lines.forEach((l, i) => ctx.fillText(l, W / 2, y0 + i * lh));
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
+  return c;
+}
+// Where the characters sit on the plaque, as fractions of its width/height.
+export const EMA_GLYPH = { one: 0.5, span: 0.84, y: 0.6 };
+
+// A chessboard: eight by eight, cream and dark wood, for the table at the
+// hobbies. No text, so it needs no fonts.
+export function paintChessboard(S = 256) {
+  const c = makeCanvas(S, S);
+  const ctx = c.getContext("2d");
+  const q = S / 8;
+  for (let r = 0; r < 8; r++)
+    for (let f = 0; f < 8; f++) {
+      ctx.fillStyle = (r + f) % 2 ? "#6e4b30" : "#efe4cc";
+      ctx.fillRect(f * q, r * q, q, q);
+    }
+  fibres(ctx, S, S, 0.06, 160, 29);
+  ctx.strokeStyle = "#3b2a1c";
+  ctx.lineWidth = Math.max(1, S * 0.012);
+  ctx.strokeRect(ctx.lineWidth / 2, ctx.lineWidth / 2, S - ctx.lineWidth, S - ctx.lineWidth);
   return c;
 }
 
